@@ -20,7 +20,7 @@ source-repository head
 
 library
   exposed-modules:
-      Data.API.TH
+      Derive.API.TH
   other-modules:
       Paths_derive_api_th
   hs-source-dirs:

@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveLift #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Data.API.TH
+module Derive.API.TH
   ( DerivingOptions(..)
   , SumEncoding(..)
   , defaultDerivingOptions
