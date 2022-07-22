@@ -76,10 +76,10 @@ derivingOptionsToJsonOptions DerivingOptions{..} = defaultOptions
     snaked = if snake then camelTo2 '_' else id
     stripped = maybe id stripPrefix prefix
 
-#ifndef ghcjs_HOST_OS
 derivingOptionsToSchemaOptions :: DerivingOptions -> SchemaOptions
 derivingOptionsToSchemaOptions = fromAesonOptions . derivingOptionsToJsonOptions
 
+#ifndef ghcjs_HOST_OS
 deriveToParamSchema :: DerivingOptions -> Name -> Q [Dec]
 deriveToParamSchema opts tname = do
   let
