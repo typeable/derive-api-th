@@ -3,7 +3,8 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Derive.API.TH
-  ( DerivingOptions(..)
+  ( module A
+  , DerivingOptions(..)
   , SumEncoding(..)
   , defaultDerivingOptions
   , derivingOptionsToJsonOptions
