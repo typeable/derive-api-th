@@ -13,6 +13,7 @@ module Derive.API.TH
   , derivingOptionsToSchemaOptions
   , deriveToParamSchema
   , deriveToSchema
+  , deriveArbitrary
 #endif
   , deriveApiFromJSON
   , deriveApiToJSON
@@ -27,14 +28,16 @@ import           Data.Functor
 #endif
 import qualified Data.List as List
 import           Data.Maybe
-#ifndef ghcjs_HOST_OS
-import           Data.OpenApi hiding (prefix)
-#endif
 import           Data.Typeable
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Datatype
 import           Language.Haskell.TH.Syntax
 
+#ifndef ghcjs_HOST_OS
+import           Data.OpenApi hiding (prefix)
+import           Test.QuickCheck
+import           Test.QuickCheck.Arbitrary.Generic
+#endif
 
 -- | derive JSON and openapi3 (ToSchema) instances
 deriveApiInstances :: DerivingOptions -> Name -> Q [Dec]
@@ -45,6 +48,17 @@ deriveApiInstances opts tname = liftM2 (<>)
 #else
 deriveApiInstances opts tname =
   deriveJSON (derivingOptionsToJsonOptions opts) tname
+#endif
+
+-- | derive JSON and openapi3 (ToSchema) instances
+deriveApiAndArbitraryInstances :: DerivingOptions -> Name -> Q [Dec]
+#ifndef ghcjs_HOST_OS
+deriveApiAndArbitraryInstances opts tname = liftM2 (<>)
+  (deriveApiInstances opts tname)
+  (deriveArbitrary tname)
+#else
+deriveApiAndArbitraryInstances opts tname =
+  deriveApiInstances opts tname
 #endif
 
 -- We can't directly 'lift' Options into TH, so have to use this
@@ -121,3 +135,12 @@ generateParseJSON = mkParseJSON . derivingOptionsToJsonOptions
 
 stripPrefix :: String -> String -> String
 stripPrefix pfx = fromMaybe <*> List.stripPrefix pfx
+
+#ifndef ghcjs_HOST_OS
+deriveArbitrary :: Name -> Q [Dec]
+deriveArbitrary t = [d|
+  instance Arbitrary $(conT t) where
+    arbitrary = genericArbitrary
+    shrink = genericShrink
+  |]
+#endif

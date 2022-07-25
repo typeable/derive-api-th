@@ -32,7 +32,9 @@ library
     , th-abstraction
   if !impl(ghcjs)
     build-depends:
-      openapi3
+        openapi3
+      , generic-arbitrary
+      , QuickCheck
   default-language: Haskell2010
   default-extensions:
       DuplicateRecordFields
