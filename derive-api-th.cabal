@@ -30,11 +30,11 @@ library
     , aeson
     , template-haskell
     , th-abstraction
+    , generic-arbitrary
+    , QuickCheck
   if !impl(ghcjs)
     build-depends:
         openapi3
-      , generic-arbitrary
-      , QuickCheck
   default-language: Haskell2010
   default-extensions:
       DuplicateRecordFields

@@ -14,30 +14,27 @@ module Derive.API.TH
   , derivingOptionsToSchemaOptions
   , deriveToParamSchema
   , deriveToSchema
-  , deriveArbitrary
 #endif
   , deriveApiFromJSON
   , deriveApiToJSON
+  , deriveArbitrary
   , generateParseJSON
   ) where
 
-import           Control.Monad
-import           Data.Aeson.TH as A
-import           Data.Aeson.Types
-#if MIN_VERSION_th_abstraction(0,3,0)
-import           Data.Functor
-#endif
-import qualified Data.List as List
-import           Data.Maybe
-import           Data.Typeable
-import           Language.Haskell.TH
-import           Language.Haskell.TH.Datatype
-import           Language.Haskell.TH.Syntax
+import Control.Monad
+import Data.Aeson.TH as A
+import Data.Aeson.Types
+import Data.List
+import Data.Maybe
+import Data.Typeable
+import Language.Haskell.TH
+import Language.Haskell.TH.Datatype
+import Language.Haskell.TH.Syntax
+import Test.QuickCheck
+import Test.QuickCheck.Arbitrary.Generic
 
 #ifndef ghcjs_HOST_OS
-import           Data.OpenApi hiding (prefix)
-import           Test.QuickCheck
-import           Test.QuickCheck.Arbitrary.Generic
+import Data.OpenApi hiding (prefix)
 #endif
 
 -- | derive JSON and openapi3 (ToSchema) instances
@@ -90,7 +87,7 @@ derivingOptionsToJsonOptions DerivingOptions{..} = defaultOptions
   , unwrapUnaryRecords }
   where
     snaked = if snake then camelTo2 '_' else id
-    stripped = maybe id stripPrefix prefix
+    stripped = maybe id stripPrefix' prefix
 
 #ifndef ghcjs_HOST_OS
 derivingOptionsToSchemaOptions :: DerivingOptions -> SchemaOptions
@@ -110,9 +107,10 @@ deriveToSchema :: DerivingOptions -> Name -> Q [Dec]
 deriveToSchema opts tname = do
   tinfo <- reifyDatatype tname
   let
-    tvars = datatypeVars tinfo
 #if MIN_VERSION_th_abstraction(0,3,0)
-      <&> VarT . tvName
+    tvars = VarT . tvName <$> datatypeVars tinfo
+#else
+    tvars = datatypeVars tinfo
 #endif
     context = do
       var <- tvars
@@ -134,14 +132,12 @@ deriveApiToJSON = deriveToJSON . derivingOptionsToJsonOptions
 generateParseJSON :: DerivingOptions -> Name -> Q Exp
 generateParseJSON = mkParseJSON . derivingOptionsToJsonOptions
 
-stripPrefix :: String -> String -> String
-stripPrefix pfx = fromMaybe <*> List.stripPrefix pfx
+stripPrefix' :: String -> String -> String
+stripPrefix' pfx = fromMaybe <*> stripPrefix pfx
 
-#ifndef ghcjs_HOST_OS
 deriveArbitrary :: Name -> Q [Dec]
 deriveArbitrary t = [d|
   instance Arbitrary $(conT t) where
     arbitrary = genericArbitrary
     shrink = genericShrink
   |]
-#endif
