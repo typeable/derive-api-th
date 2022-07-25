@@ -9,6 +9,7 @@ module Derive.API.TH
   , defaultDerivingOptions
   , derivingOptionsToJsonOptions
   , deriveApiInstances
+  , deriveApiAndArbitraryInstances
 #ifndef ghcjs_HOST_OS
   , derivingOptionsToSchemaOptions
   , deriveToParamSchema
