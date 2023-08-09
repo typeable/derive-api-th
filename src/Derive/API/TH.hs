@@ -67,6 +67,7 @@ data DerivingOptions = DerivingOptions
   -- ^ Whether to snake constructors and field labels
   --   Applied after stripping prefix
   , unwrapUnaryRecords :: Bool
+  , omitNothingFields :: Bool
   , sumEncoding :: SumEncoding
   } deriving (Lift)
 
@@ -76,7 +77,8 @@ defaultDerivingOptions :: DerivingOptions
 defaultDerivingOptions = DerivingOptions
   { prefix = Nothing
   , snake = True
-  , unwrapUnaryRecords = True
+  , unwrapUnaryRecords = False
+  , omitNothingFields = False
   , sumEncoding = defaultTaggedObject }
 
 derivingOptionsToJsonOptions :: DerivingOptions -> Options
@@ -84,6 +86,7 @@ derivingOptionsToJsonOptions DerivingOptions{..} = defaultOptions
   { fieldLabelModifier = snaked . stripped
   , constructorTagModifier = snaked . stripped
   , sumEncoding
+  , omitNothingFields
   , unwrapUnaryRecords }
   where
     snaked = if snake then camelTo2 '_' else id
