@@ -59,10 +59,11 @@ deriveApiAndArbitraryInstances opts tname =
   deriveApiInstances opts tname
 #endif
 
--- We can't directly 'lift' Options into TH, so have to use this
+-- We can't directly 'lift' Options into TH (there is no instance for function),
+-- so we use this type.
 data DerivingOptions = DerivingOptions
   { prefix :: Maybe String
-  -- ^ Optional prefix to strip from constructors and field labels
+  -- ^ Optional prefix to strip from constructors and field labels  
   , snake :: Bool
   -- ^ Whether to snake constructors and field labels
   --   Applied after stripping prefix
@@ -93,18 +94,23 @@ derivingOptionsToJsonOptions DerivingOptions{..} = defaultOptions
     stripped = maybe id stripPrefix' prefix
 
 #ifndef ghcjs_HOST_OS
+datatypeVarsTypes :: DatatypeInfo -> [Type]
+#if MIN_VERSION_th_abstraction(0,3,0)
+datatypeVarsTypes = fmap (VarT . tvName) . datatypeVars 
+#else
+datatypeVarsTypes = datatypeVars 
+#endif
+
 derivingOptionsToSchemaOptions :: DerivingOptions -> SchemaOptions
 derivingOptionsToSchemaOptions = fromAesonOptions . derivingOptionsToJsonOptions
 
 deriveToParamSchema :: DerivingOptions -> Name -> Q [Dec]
 deriveToParamSchema opts tname = do
-  let
-    body = AppE (VarE 'genericToParamSchema) <$>
-      appE (pure $ VarE 'derivingOptionsToSchemaOptions) (lift opts)
-  pure <$> instanceD
-    (pure [])
-    (pure $ ConT ''ToParamSchema `AppT` ConT tname)
-    [ funD 'toParamSchema $ pure $ clause [] (normalB body) [] ]
+  body <- AppE (VarE 'genericToParamSchema) 
+    . AppE (VarE 'derivingOptionsToSchemaOptions) <$> lift opts
+  pure [InstanceD Nothing []
+    (ConT ''ToParamSchema `AppT` ConT tname)
+    [FunD 'toParamSchema [Clause [] (NormalB body) []] ]]
 
 deriveToSchema :: DerivingOptions -> Name -> Q [Dec]
 deriveToSchema opts tname = do
@@ -113,19 +119,11 @@ deriveToSchema opts tname = do
     context = do
       var <- datatypeVarsTypes tinfo
       [ConT ''Typeable `AppT` var, ConT ''ToSchema `AppT` var]
-    body = AppE (VarE 'genericDeclareNamedSchema) <$>
-      appE (pure $ VarE 'derivingOptionsToSchemaOptions) (lift opts)
-  pure <$> instanceD
-    (pure context)
-    (pure $ ConT ''ToSchema `AppT` datatypeType tinfo)
-    [ funD 'declareNamedSchema $ pure $ clause [] (normalB body) [] ]
-
-datatypeVarsTypes :: DatatypeInfo -> [Type]
-#if MIN_VERSION_th_abstraction(0,3,0)
-datatypeVarsTypes = fmap (VarT . tvName) . datatypeVars 
-#else
-datatypeVarsTypes = datatypeVars 
-#endif
+  body <- AppE (VarE 'genericDeclareNamedSchema)
+      . AppE (VarE 'derivingOptionsToSchemaOptions) <$> lift opts
+  pure [InstanceD Nothing context
+    (ConT ''ToSchema `AppT` datatypeType tinfo)
+    [ FunD 'declareNamedSchema [Clause [] (NormalB body) []] ]]
 
 deriveArbitrary :: Name -> Q [Dec]
 deriveArbitrary t = do 
