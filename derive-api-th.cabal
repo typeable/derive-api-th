@@ -37,7 +37,8 @@ library
         openapi3
   default-language: Haskell2010
   default-extensions:
-      DuplicateRecordFields
+      BlockArguments
+    , DuplicateRecordFields
     , NamedFieldPuns
     , RecordWildCards
     , StandaloneDeriving

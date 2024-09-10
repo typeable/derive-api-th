@@ -26,7 +26,6 @@ import Data.Aeson.TH as A
 import Data.Aeson.Types
 import Data.List
 import Data.Maybe
--- import Data.Traversable
 import Data.Typeable
 import Language.Haskell.TH
 import Language.Haskell.TH.Datatype
@@ -131,8 +130,12 @@ datatypeVarsTypes = datatypeVars
 deriveArbitrary :: Name -> Q [Dec]
 deriveArbitrary t = do 
   tinfo <- reifyDatatype t
-  let ctx = AppT (ConT ''Arbitrary) <$> datatypeVarsTypes tinfo
-  pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` datatypeType tinfo)
+  let 
+    typ = datatypeType tinfo
+    ctx = datatypeVarsTypes tinfo >>= \tv -> 
+      [ ConT ''Arbitrary `AppT` tv
+      , ConT ''Arg `AppT` typ `AppT` tv  ]
+  pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` typ)
     [ FunD 'arbitrary [Clause [] (NormalB $ VarE 'genericArbitrary) []]
     , FunD 'shrink [Clause [] (NormalB $ VarE 'genericShrink) []] ] ]
 #endif
