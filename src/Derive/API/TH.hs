@@ -152,8 +152,8 @@ deriveArbitrary t = do
     ba = VarE 'genericArbitrary
     bs = VarE 'genericShrink
   pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` datatypeType tinfo)
-    [ pure $ FunD 'arbitrary [Clause [] (NormalB ba) []]
-    , pure $ FunD 'shrink [Clause [] (NormalB bs) []] ]
+    [ FunD 'arbitrary [Clause [] (NormalB ba) []]
+    , FunD 'shrink [Clause [] (NormalB bs) []] ] ]
   --   (pure )
   --   (pure $ ConT ''ToSchema `AppT` datatypeType tinfo)
   --   [ funD 'declareNamedSchema $ pure $ clause [] (normalB body) [] ]
