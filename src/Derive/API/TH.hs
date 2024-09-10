@@ -149,5 +149,19 @@ deriveArbitrary t = do
     tvars = datatypeVars tinfo
 #endif
     ctx = AppT (ConT ''Arbitrary) <$> tvars
-  decs <- [d| arbitrary = genericArbitrary; shrink = genericShrink |]
-  pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` datatypeType tinfo) decs]
+    ba = VarE 'genericArbitrary
+    bs = VarE 'genericShrink
+  pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` datatypeType tinfo)
+    [ pure $ FunD 'arbitrary [Clause [] (NormalB ba) []]
+    , pure $ FunD 'shrink [Clause [] (NormalB bs) []] ]
+  --   (pure )
+  --   (pure $ ConT ''ToSchema `AppT` datatypeType tinfo)
+  --   [ funD 'declareNamedSchema $ pure $ clause [] (normalB body) [] ]
+  -- --   body = AppE (VarE 'genericDeclareNamedSchema) <$>
+  -- --     appE (pure $ VarE 'derivingOptionsToSchemaOptions) (lift opts)
+  -- -- pure <$> instanceD
+  -- --   (pure context)
+  -- --   (pure $ ConT ''ToSchema `AppT` datatypeType tinfo)
+  -- --   [ funD 'declareNamedSchema $ pure $ clause [] (normalB body) [] ]
+  -- decs <- [d| arbitrary = genericArbitrary; shrink = genericShrink |]
+  -- pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` datatypeType tinfo) decs]
