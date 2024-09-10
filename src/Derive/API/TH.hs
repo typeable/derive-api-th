@@ -26,6 +26,7 @@ import Data.Aeson.TH as A
 import Data.Aeson.Types
 import Data.List
 import Data.Maybe
+-- import Data.Traversable
 import Data.Typeable
 import Language.Haskell.TH
 import Language.Haskell.TH.Datatype
@@ -48,7 +49,7 @@ deriveApiInstances opts tname =
   deriveJSON (derivingOptionsToJsonOptions opts) tname
 #endif
 
--- | derive JSON and openapi3 (ToSchema) instances
+-- | derive JSON and openapi3 (ToSchema) and Arbitrary instances
 deriveApiAndArbitraryInstances :: DerivingOptions -> Name -> Q [Dec]
 #ifndef ghcjs_HOST_OS
 deriveApiAndArbitraryInstances opts tname = liftM2 (<>)
@@ -139,8 +140,14 @@ stripPrefix' :: String -> String -> String
 stripPrefix' pfx = fromMaybe <*> stripPrefix pfx
 
 deriveArbitrary :: Name -> Q [Dec]
-deriveArbitrary t = [d|
-  instance Arbitrary $(conT t) where
-    arbitrary = genericArbitrary
-    shrink = genericShrink
-  |]
+deriveArbitrary t = do 
+  tinfo <- reifyDatatype t
+  let
+#if MIN_VERSION_th_abstraction(0,3,0)
+    tvars = VarT . tvName <$> datatypeVars tinfo
+#else
+    tvars = datatypeVars tinfo
+#endif
+    ctx = AppT (ConT ''Arbitrary) <$> tvars
+  decs <- [d| arbitrary = genericArbitrary; shrink = genericShrink |]
+  pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` datatypeType tinfo) decs]
