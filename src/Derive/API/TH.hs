@@ -14,10 +14,10 @@ module Derive.API.TH
   , derivingOptionsToSchemaOptions
   , deriveToParamSchema
   , deriveToSchema
+  , deriveArbitrary
 #endif
   , deriveApiFromJSON
   , deriveApiToJSON
-  , deriveArbitrary
   , generateParseJSON
   ) where
 
