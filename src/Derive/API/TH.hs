@@ -111,13 +111,8 @@ deriveToSchema :: DerivingOptions -> Name -> Q [Dec]
 deriveToSchema opts tname = do
   tinfo <- reifyDatatype tname
   let
-#if MIN_VERSION_th_abstraction(0,3,0)
-    tvars = VarT . tvName <$> datatypeVars tinfo
-#else
-    tvars = datatypeVars tinfo
-#endif
     context = do
-      var <- tvars
+      var <- datatypeVarsTypes tinfo
       [ConT ''Typeable `AppT` var, ConT ''ToSchema `AppT` var]
     body = AppE (VarE 'genericDeclareNamedSchema) <$>
       appE (pure $ VarE 'derivingOptionsToSchemaOptions) (lift opts)
@@ -125,6 +120,21 @@ deriveToSchema opts tname = do
     (pure context)
     (pure $ ConT ''ToSchema `AppT` datatypeType tinfo)
     [ funD 'declareNamedSchema $ pure $ clause [] (normalB body) [] ]
+
+datatypeVarsTypes :: DatatypeInfo -> [Type]
+#if MIN_VERSION_th_abstraction(0,3,0)
+datatypeVarsTypes = fmap (VarT . tvName) . datatypeVars 
+#else
+datatypeVarsTypes = datatypeVars 
+#endif
+
+deriveArbitrary :: Name -> Q [Dec]
+deriveArbitrary t = do 
+  tinfo <- reifyDatatype t
+  let ctx = AppT (ConT ''Arbitrary) <$> datatypeVarsTypes tinfo
+  pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` datatypeType tinfo)
+    [ FunD 'arbitrary [Clause [] (NormalB $ VarE 'genericArbitrary) []]
+    , FunD 'shrink [Clause [] (NormalB $ VarE 'genericShrink) []] ] ]
 #endif
 
 deriveApiFromJSON :: DerivingOptions -> Name -> Q [Dec]
@@ -139,29 +149,3 @@ generateParseJSON = mkParseJSON . derivingOptionsToJsonOptions
 stripPrefix' :: String -> String -> String
 stripPrefix' pfx = fromMaybe <*> stripPrefix pfx
 
-deriveArbitrary :: Name -> Q [Dec]
-deriveArbitrary t = do 
-  tinfo <- reifyDatatype t
-  let
-#if MIN_VERSION_th_abstraction(0,3,0)
-    tvars = VarT . tvName <$> datatypeVars tinfo
-#else
-    tvars = datatypeVars tinfo
-#endif
-    ctx = AppT (ConT ''Arbitrary) <$> tvars
-    ba = VarE 'genericArbitrary
-    bs = VarE 'genericShrink
-  pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` datatypeType tinfo)
-    [ FunD 'arbitrary [Clause [] (NormalB ba) []]
-    , FunD 'shrink [Clause [] (NormalB bs) []] ] ]
-  --   (pure )
-  --   (pure $ ConT ''ToSchema `AppT` datatypeType tinfo)
-  --   [ funD 'declareNamedSchema $ pure $ clause [] (normalB body) [] ]
-  -- --   body = AppE (VarE 'genericDeclareNamedSchema) <$>
-  -- --     appE (pure $ VarE 'derivingOptionsToSchemaOptions) (lift opts)
-  -- -- pure <$> instanceD
-  -- --   (pure context)
-  -- --   (pure $ ConT ''ToSchema `AppT` datatypeType tinfo)
-  -- --   [ funD 'declareNamedSchema $ pure $ clause [] (normalB body) [] ]
-  -- decs <- [d| arbitrary = genericArbitrary; shrink = genericShrink |]
-  -- pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` datatypeType tinfo) decs]
