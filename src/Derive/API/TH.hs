@@ -60,6 +60,15 @@ deriveApiAndArbitraryInstances opts tname =
   deriveApiInstances opts tname
 #endif
 
+#if MIN_VERSION_containers(0,6,6)
+#elif MIN_VERSION_template_haskell(2,16,0)
+instance (Lift k, Lift a) => Lift (Map k a) where
+  liftTyped x = unsafeCodeCoerce (lift x)
+  lift m = [|M.fromList (M.toList m)|]
+#else
+instance (Lift k, Lift a) => Lift (Map k a) where
+  lift m = [|M.fromList (M.toList m)|]
+#endif
 -- We can't directly 'lift' Options into TH (there is no instance for function),
 -- so we use this type.
 data DerivingOptions = DerivingOptions
