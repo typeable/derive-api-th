@@ -25,6 +25,7 @@ import Control.Monad
 import Data.Aeson.TH as A
 import Data.Aeson.Types
 import Data.List
+import Data.Map as M
 import Data.Maybe
 import Data.Typeable
 import Language.Haskell.TH
@@ -67,6 +68,8 @@ data DerivingOptions = DerivingOptions
   , snake :: Bool
   -- ^ Whether to snake constructors and field labels
   --   Applied after stripping prefix
+  , convertMap :: M.Map String String
+  -- ^ convert names (constructors and fields) before snake and strip prefix
   , unwrapUnaryRecords :: Bool
   , omitNothingFields :: Bool
   , sumEncoding :: SumEncoding
@@ -78,18 +81,20 @@ defaultDerivingOptions :: DerivingOptions
 defaultDerivingOptions = DerivingOptions
   { prefix = Nothing
   , snake = True
+  , convertMap = mempty
   , unwrapUnaryRecords = False
   , omitNothingFields = False
   , sumEncoding = defaultTaggedObject }
 
 derivingOptionsToJsonOptions :: DerivingOptions -> Options
 derivingOptionsToJsonOptions DerivingOptions{..} = defaultOptions
-  { fieldLabelModifier = snaked . stripped
-  , constructorTagModifier = snaked . stripped
+  { fieldLabelModifier = snaked . stripped . convert
+  , constructorTagModifier = snaked . stripped . convert
   , sumEncoding
   , omitNothingFields
   , unwrapUnaryRecords }
   where
+    convert s = fromMaybe s $ M.lookup s convertMap
     snaked = if snake then camelTo2 '_' else id
     stripped = maybe id stripPrefix' prefix
 
