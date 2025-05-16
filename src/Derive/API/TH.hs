@@ -31,16 +31,16 @@ import Data.Typeable
 import Language.Haskell.TH
 import Language.Haskell.TH.Datatype
 import Language.Haskell.TH.Syntax
+
+#ifdef BACKEND
+import Data.OpenApi hiding (prefix)
 import Test.QuickCheck
 import Test.QuickCheck.Arbitrary.Generic
-
-#ifndef ghcjs_HOST_OS
-import Data.OpenApi hiding (prefix)
 #endif
 
 -- | derive JSON and openapi3 (ToSchema) instances
 deriveApiInstances :: DerivingOptions -> Name -> Q [Dec]
-#ifndef ghcjs_HOST_OS
+#ifdef BACKEND
 deriveApiInstances opts tname = liftM2 (<>)
   (deriveJSON (derivingOptionsToJsonOptions opts) tname)
   (deriveToSchema opts tname)
@@ -51,7 +51,7 @@ deriveApiInstances opts tname =
 
 -- | derive JSON and openapi3 (ToSchema) and Arbitrary instances
 deriveApiAndArbitraryInstances :: DerivingOptions -> Name -> Q [Dec]
-#ifndef ghcjs_HOST_OS
+#ifdef BACKEND
 deriveApiAndArbitraryInstances opts tname = liftM2 (<>)
   (deriveApiInstances opts tname)
   (deriveArbitrary tname)
@@ -73,7 +73,7 @@ instance (Lift k, Lift a) => Lift (Map k a) where
 -- so we use this type.
 data DerivingOptions = DerivingOptions
   { prefix :: Maybe String
-  -- ^ Optional prefix to strip from constructors and field labels  
+  -- ^ Optional prefix to strip from constructors and field labels
   , snake :: Bool
   -- ^ Whether to snake constructors and field labels
   --   Applied after stripping prefix
@@ -107,12 +107,12 @@ derivingOptionsToJsonOptions DerivingOptions{..} = defaultOptions
     snaked = if snake then camelTo2 '_' else id
     stripped = maybe id stripPrefix' prefix
 
-#ifndef ghcjs_HOST_OS
+#ifdef BACKEND
 datatypeVarsTypes :: DatatypeInfo -> [Type]
 #if MIN_VERSION_th_abstraction(0,3,0)
-datatypeVarsTypes = fmap (VarT . tvName) . datatypeVars 
+datatypeVarsTypes = fmap (VarT . tvName) . datatypeVars
 #else
-datatypeVarsTypes = datatypeVars 
+datatypeVarsTypes = datatypeVars
 #endif
 
 derivingOptionsToSchemaOptions :: DerivingOptions -> SchemaOptions
@@ -120,7 +120,7 @@ derivingOptionsToSchemaOptions = fromAesonOptions . derivingOptionsToJsonOptions
 
 deriveToParamSchema :: DerivingOptions -> Name -> Q [Dec]
 deriveToParamSchema opts tname = do
-  body <- AppE (VarE 'genericToParamSchema) 
+  body <- AppE (VarE 'genericToParamSchema)
     . AppE (VarE 'derivingOptionsToSchemaOptions) <$> lift opts
   pure [InstanceD Nothing []
     (ConT ''ToParamSchema `AppT` ConT tname)
@@ -140,11 +140,11 @@ deriveToSchema opts tname = do
     [ FunD 'declareNamedSchema [Clause [] (NormalB body) []] ]]
 
 deriveArbitrary :: Name -> Q [Dec]
-deriveArbitrary t = do 
+deriveArbitrary t = do
   tinfo <- reifyDatatype t
-  let 
+  let
     typ = datatypeType tinfo
-    ctx = datatypeVarsTypes tinfo >>= \tv -> 
+    ctx = datatypeVarsTypes tinfo >>= \tv ->
       [ ConT ''Arbitrary `AppT` tv
       , ConT ''Arg `AppT` typ `AppT` tv  ]
   pure [InstanceD Nothing ctx (ConT ''Arbitrary `AppT` typ)
@@ -163,4 +163,3 @@ generateParseJSON = mkParseJSON . derivingOptionsToJsonOptions
 
 stripPrefix' :: String -> String -> String
 stripPrefix' pfx = fromMaybe <*> stripPrefix pfx
-
