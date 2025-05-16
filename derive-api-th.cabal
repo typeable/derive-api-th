@@ -36,6 +36,7 @@ library
         openapi3
       , generic-arbitrary
       , QuickCheck
+    cpp-options: -DBACKEND
   default-language: Haskell2010
   default-extensions:
       BlockArguments
