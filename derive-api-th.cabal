@@ -31,7 +31,7 @@ library
 
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
-        generic-arbitrary
+        generic-arbitrary  >=1.0
       , openapi3
       , QuickCheck
 
