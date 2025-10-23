@@ -1,47 +1,47 @@
-cabal-version: 1.12
+cabal-version:      1.12
+name:               derive-api-th
+version:            0.1.0.0
+description:
+  Please see the README on GitHub at <https://github.com/typeable/derive-api-th#readme>
 
-name:           derive-api-th
-version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/typeable/derive-api-th#readme>
-homepage:       https://github.com/typeable/derive-api-th#readme
-bug-reports:    https://github.com/typeable/derive-api-th/issues
-author:         Typeable
-maintainer:     dima@typeable.io
-copyright:      2022 Typeable LLC
-license:        BSD3
-license-file:   LICENSE
-build-type:     Simple
-extra-source-files:
-    README.md
+homepage:           https://github.com/typeable/derive-api-th#readme
+bug-reports:        https://github.com/typeable/derive-api-th/issues
+author:             Typeable
+maintainer:         dima@typeable.io
+copyright:          2022 Typeable LLC
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
+extra-source-files: README.md
 
 source-repository head
-  type: git
+  type:     git
   location: https://github.com/typeable/derive-api-th
 
 library
-  exposed-modules:
-      Derive.API.TH
-  other-modules:
-      Paths_derive_api_th
-  hs-source-dirs:
-      src
+  exposed-modules:    Derive.API.TH
+  other-modules:      Paths_derive_api_th
+  hs-source-dirs:     src
   build-depends:
-      base >=4.7 && <5
-    , aeson
+      aeson
+    , base              >=4.7 && <5
     , containers
     , template-haskell
     , th-abstraction
+
   if !(impl(ghcjs) || arch(javascript))
     build-depends:
-        openapi3
-      , generic-arbitrary
+        generic-arbitrary  >=1.0
+      , openapi3
       , QuickCheck
-    cpp-options: -DBACKEND
-  default-language: Haskell2010
+
+    cpp-options:   -DBACKEND
+
+  default-language:   Haskell2010
   default-extensions:
-      BlockArguments
-    , DuplicateRecordFields
-    , NamedFieldPuns
-    , RecordWildCards
-    , StandaloneDeriving
-    , TemplateHaskell
+    BlockArguments
+    DuplicateRecordFields
+    NamedFieldPuns
+    RecordWildCards
+    StandaloneDeriving
+    TemplateHaskell
