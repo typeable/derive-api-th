@@ -29,7 +29,7 @@ library
     , template-haskell
     , th-abstraction
 
-  if !(impl(ghcjs) || arch(javascript))
+  if !(impl(ghcjs) || arch(javascript) || arch(wasm32))
     build-depends:
         generic-arbitrary  >=1.0
       , openapi3
